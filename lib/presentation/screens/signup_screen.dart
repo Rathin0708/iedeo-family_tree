@@ -2,52 +2,51 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/utils/validators.dart';
+import '../../core/di/injection_container.dart';
 import '../bloc/auth/auth_bloc.dart';
 import '../bloc/auth/auth_state.dart';
-import '../bloc/signup/signup_bloc.dart';
-import '../bloc/signup/signup_event.dart';
-import '../bloc/signup/signup_state.dart';
+import '../viewmodels/signup_viewmodel.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/loading_button.dart';
 import 'login_screen.dart';
 
-class SignupScreen extends StatelessWidget {
-  const SignupScreen({super.key});
+class MVVMSignupScreen extends StatefulWidget {
+  const MVVMSignupScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => SignupBloc(
-        authBloc: context.read<AuthBloc>(),
-      ),
-      child: const SignupView(),
-    );
-  }
+  State<MVVMSignupScreen> createState() => _MVVMSignupScreenState();
 }
 
-class SignupView extends StatefulWidget {
-  const SignupView({super.key});
-
-  @override
-  State<SignupView> createState() => _SignupViewState();
-}
-
-class _SignupViewState extends State<SignupView> {
+class _MVVMSignupScreenState extends State<MVVMSignupScreen> {
+  late SignupViewModel _viewModel;
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = InjectionContainer.signupViewModel;
+    
+    // Listen to ViewModel changes
+    _viewModel.addListener(_onViewModelChanged);
+  }
 
   @override
   void dispose() {
+    _viewModel.removeListener(_onViewModelChanged);
     _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  void _onViewModelChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -64,10 +63,6 @@ class _SignupViewState extends State<SignupView> {
                   backgroundColor: AppColors.error,
                 ),
               );
-              // Reset form status
-              context.read<SignupBloc>().add(
-                    SignupEmailChanged(_emailController.text),
-                  );
             }
           },
           child: SingleChildScrollView(
@@ -109,94 +104,82 @@ class _SignupViewState extends State<SignupView> {
   }
 
   Widget _buildSignupForm(BuildContext context) {
-    return BlocBuilder<SignupBloc, SignupState>(
-      builder: (context, state) {
-        return Column(
-          children: [
-            CustomTextField(
-              label: AppStrings.fullName,
-              hintText: 'Enter your full name',
-              controller: _fullNameController,
-              keyboardType: TextInputType.name,
-              errorText: _getFullNameErrorText(state.fullName),
-              onChanged: (value) {
-                context.read<SignupBloc>().add(SignupFullNameChanged(value));
-              },
+    return Column(
+      children: [
+        CustomTextField(
+          label: AppStrings.fullName,
+          hintText: 'Enter your full name',
+          controller: _fullNameController,
+          keyboardType: TextInputType.name,
+          errorText: _viewModel.fullNameError,
+          onChanged: (value) {
+            _viewModel.updateFullName(value);
+          },
+        ),
+        const SizedBox(height: 24),
+        CustomTextField(
+          label: AppStrings.email,
+          hintText: 'Enter your email',
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          errorText: _viewModel.emailError,
+          onChanged: (value) {
+            _viewModel.updateEmail(value);
+          },
+        ),
+        const SizedBox(height: 24),
+        CustomTextField(
+          label: AppStrings.password,
+          hintText: 'Enter your password',
+          controller: _passwordController,
+          obscureText: _viewModel.obscurePassword,
+          errorText: _viewModel.passwordError,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _viewModel.obscurePassword ? Icons.visibility : Icons.visibility_off,
+              color: AppColors.textSecondary,
             ),
-            const SizedBox(height: 24),
-            CustomTextField(
-              label: AppStrings.email,
-              hintText: 'Enter your email',
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              errorText: _getEmailErrorText(state.email),
-              onChanged: (value) {
-                context.read<SignupBloc>().add(SignupEmailChanged(value));
-              },
+            onPressed: () {
+              _viewModel.togglePasswordVisibility();
+            },
+          ),
+          onChanged: (value) {
+            _viewModel.updatePassword(value);
+          },
+        ),
+        const SizedBox(height: 24),
+        CustomTextField(
+          label: AppStrings.confirmPassword,
+          hintText: 'Confirm your password',
+          controller: _confirmPasswordController,
+          obscureText: _viewModel.obscureConfirmPassword,
+          errorText: _viewModel.confirmPasswordError,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _viewModel.obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+              color: AppColors.textSecondary,
             ),
-            const SizedBox(height: 24),
-            CustomTextField(
-              label: AppStrings.password,
-              hintText: 'Enter your password',
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              errorText: _getPasswordErrorText(state.password),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                  color: AppColors.textSecondary,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
-              ),
-              onChanged: (value) {
-                context.read<SignupBloc>().add(SignupPasswordChanged(value));
-              },
-            ),
-            const SizedBox(height: 24),
-            CustomTextField(
-              label: AppStrings.confirmPassword,
-              hintText: 'Confirm your password',
-              controller: _confirmPasswordController,
-              obscureText: _obscureConfirmPassword,
-              errorText: _getConfirmPasswordErrorText(state.confirmPassword),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
-                  color: AppColors.textSecondary,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscureConfirmPassword = !_obscureConfirmPassword;
-                  });
-                },
-              ),
-              onChanged: (value) {
-                context.read<SignupBloc>().add(SignupConfirmPasswordChanged(value));
-              },
-            ),
-          ],
-        );
-      },
+            onPressed: () {
+              _viewModel.toggleConfirmPasswordVisibility();
+            },
+          ),
+          onChanged: (value) {
+            _viewModel.updateConfirmPassword(value);
+          },
+        ),
+      ],
     );
   }
 
   Widget _buildSignupButton(BuildContext context) {
-    return BlocBuilder<SignupBloc, SignupState>(
-      builder: (context, state) {
-        return BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, authState) {
-            return LoadingButton(
-              text: AppStrings.signup,
-              isLoading: authState is AuthLoading,
-              isEnabled: state.isValid,
-              onPressed: () {
-                context.read<SignupBloc>().add(SignupSubmitted());
-              },
-            );
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        return LoadingButton(
+          text: AppStrings.signup,
+          isLoading: authState is AuthLoading,
+          isEnabled: _viewModel.isFormValid,
+          onPressed: () {
+            _viewModel.signup();
           },
         );
       },
@@ -215,7 +198,7 @@ class _SignupViewState extends State<SignupView> {
           onPressed: () {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (context) => const LoginScreen(),
+                builder: (context) => const MVVMLoginScreen(),
               ),
             );
           },
@@ -223,55 +206,5 @@ class _SignupViewState extends State<SignupView> {
         ),
       ],
     );
-  }
-
-  String? _getFullNameErrorText(FullName fullName) {
-    if (fullName.isPure) return null;
-    
-    switch (fullName.error) {
-      case FullNameValidationError.empty:
-        return AppStrings.fullNameRequired;
-      case null:
-        return null;
-    }
-  }
-
-  String? _getEmailErrorText(Email email) {
-    if (email.isPure) return null;
-    
-    switch (email.error) {
-      case EmailValidationError.empty:
-        return AppStrings.emailRequired;
-      case EmailValidationError.invalid:
-        return AppStrings.emailInvalid;
-      case null:
-        return null;
-    }
-  }
-
-  String? _getPasswordErrorText(Password password) {
-    if (password.isPure) return null;
-    
-    switch (password.error) {
-      case PasswordValidationError.empty:
-        return AppStrings.passwordRequired;
-      case PasswordValidationError.tooShort:
-        return AppStrings.passwordTooShort;
-      case null:
-        return null;
-    }
-  }
-
-  String? _getConfirmPasswordErrorText(ConfirmPassword confirmPassword) {
-    if (confirmPassword.isPure) return null;
-    
-    switch (confirmPassword.error) {
-      case ConfirmPasswordValidationError.empty:
-        return AppStrings.passwordRequired;
-      case ConfirmPasswordValidationError.mismatch:
-        return AppStrings.passwordsDoNotMatch;
-      case null:
-        return null;
-    }
   }
 }

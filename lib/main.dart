@@ -5,8 +5,8 @@ import 'core/theme/app_theme.dart';
 import 'presentation/bloc/auth/auth_bloc.dart';
 import 'presentation/bloc/auth/auth_event.dart';
 import 'presentation/bloc/auth/auth_state.dart';
-import 'presentation/screens/mvvm_login_screen.dart';
-import 'presentation/screens/mvvm_home_screen.dart';
+import 'presentation/screens/login_screen.dart';
+import 'presentation/screens/home_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

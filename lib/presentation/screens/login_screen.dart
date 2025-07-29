@@ -2,47 +2,47 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/utils/validators.dart';
+import '../../core/di/injection_container.dart';
 import '../bloc/auth/auth_bloc.dart';
 import '../bloc/auth/auth_state.dart';
-import '../bloc/login/login_bloc.dart';
-import '../bloc/login/login_event.dart';
-import '../bloc/login/login_state.dart';
+import '../viewmodels/login_viewmodel.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/loading_button.dart';
 import 'signup_screen.dart';
 
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+class MVVMLoginScreen extends StatefulWidget {
+  const MVVMLoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => LoginBloc(
-        authBloc: context.read<AuthBloc>(),
-      ),
-      child: const LoginView(),
-    );
-  }
+  State<MVVMLoginScreen> createState() => _MVVMLoginScreenState();
 }
 
-class LoginView extends StatefulWidget {
-  const LoginView({super.key});
-
-  @override
-  State<LoginView> createState() => _LoginViewState();
-}
-
-class _LoginViewState extends State<LoginView> {
+class _MVVMLoginScreenState extends State<MVVMLoginScreen> {
+  late LoginViewModel _viewModel;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = InjectionContainer.loginViewModel;
+    
+    // Listen to ViewModel changes
+    _viewModel.addListener(_onViewModelChanged);
+  }
 
   @override
   void dispose() {
+    _viewModel.removeListener(_onViewModelChanged);
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _onViewModelChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -59,10 +59,6 @@ class _LoginViewState extends State<LoginView> {
                   backgroundColor: AppColors.error,
                 ),
               );
-              // Reset form status
-              context.read<LoginBloc>().add(
-                    LoginEmailChanged(_emailController.text),
-                  );
             }
           },
           child: SingleChildScrollView(
@@ -106,45 +102,39 @@ class _LoginViewState extends State<LoginView> {
   }
 
   Widget _buildLoginForm(BuildContext context) {
-    return BlocBuilder<LoginBloc, LoginState>(
-      builder: (context, state) {
-        return Column(
-          children: [
-            CustomTextField(
-              label: AppStrings.email,
-              hintText: 'Enter your email',
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              errorText: _getEmailErrorText(state.email),
-              onChanged: (value) {
-                context.read<LoginBloc>().add(LoginEmailChanged(value));
-              },
+    return Column(
+      children: [
+        CustomTextField(
+          label: AppStrings.email,
+          hintText: 'Enter your email',
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          errorText: _viewModel.emailError,
+          onChanged: (value) {
+            _viewModel.updateEmail(value);
+          },
+        ),
+        const SizedBox(height: 24),
+        CustomTextField(
+          label: AppStrings.password,
+          hintText: 'Enter your password',
+          controller: _passwordController,
+          obscureText: _viewModel.obscurePassword,
+          errorText: _viewModel.passwordError,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _viewModel.obscurePassword ? Icons.visibility : Icons.visibility_off,
+              color: AppColors.textSecondary,
             ),
-            const SizedBox(height: 24),
-            CustomTextField(
-              label: AppStrings.password,
-              hintText: 'Enter your password',
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              errorText: _getPasswordErrorText(state.password),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                  color: AppColors.textSecondary,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
-              ),
-              onChanged: (value) {
-                context.read<LoginBloc>().add(LoginPasswordChanged(value));
-              },
-            ),
-          ],
-        );
-      },
+            onPressed: () {
+              _viewModel.togglePasswordVisibility();
+            },
+          ),
+          onChanged: (value) {
+            _viewModel.updatePassword(value);
+          },
+        ),
+      ],
     );
   }
 
@@ -161,18 +151,14 @@ class _LoginViewState extends State<LoginView> {
   }
 
   Widget _buildLoginButton(BuildContext context) {
-    return BlocBuilder<LoginBloc, LoginState>(
-      builder: (context, state) {
-        return BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, authState) {
-            return LoadingButton(
-              text: AppStrings.login,
-              isLoading: authState is AuthLoading,
-              isEnabled: state.isValid,
-              onPressed: () {
-                context.read<LoginBloc>().add(LoginSubmitted());
-              },
-            );
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        return LoadingButton(
+          text: AppStrings.login,
+          isLoading: authState is AuthLoading,
+          isEnabled: _viewModel.isFormValid,
+          onPressed: () {
+            _viewModel.login();
           },
         );
       },
@@ -191,7 +177,7 @@ class _LoginViewState extends State<LoginView> {
           onPressed: () {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (context) => const SignupScreen(),
+                builder: (context) => const MVVMSignupScreen(),
               ),
             );
           },
@@ -199,31 +185,5 @@ class _LoginViewState extends State<LoginView> {
         ),
       ],
     );
-  }
-
-  String? _getEmailErrorText(Email email) {
-    if (email.isPure) return null;
-    
-    switch (email.error) {
-      case EmailValidationError.empty:
-        return AppStrings.emailRequired;
-      case EmailValidationError.invalid:
-        return AppStrings.emailInvalid;
-      case null:
-        return null;
-    }
-  }
-
-  String? _getPasswordErrorText(Password password) {
-    if (password.isPure) return null;
-    
-    switch (password.error) {
-      case PasswordValidationError.empty:
-        return AppStrings.passwordRequired;
-      case PasswordValidationError.tooShort:
-        return AppStrings.passwordTooShort;
-      case null:
-        return null;
-    }
   }
 }
