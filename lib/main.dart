@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'core/di/injection_container.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/bloc/auth/auth_bloc.dart';
-import 'presentation/bloc/auth/auth_event.dart';
-import 'presentation/bloc/auth/auth_state.dart';
-import 'presentation/screens/login_screen.dart';
-import 'presentation/screens/home_screen.dart';
+import 'presentation/screens/Splash_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,41 +17,32 @@ class FamilyTreeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: InjectionContainer.authBloc..add(AuthCheckRequested()),
+    return MultiProvider(
+      providers: [
+        // BLoC Provider for authentication
+        BlocProvider.value(
+          value: InjectionContainer.authBloc,
+        ),
+        // ViewModel Providers
+        ChangeNotifierProvider.value(
+          value: InjectionContainer.splashViewModel,
+        ),
+        ChangeNotifierProvider.value(
+          value: InjectionContainer.loginViewModel,
+        ),
+        ChangeNotifierProvider.value(
+          value: InjectionContainer.signupViewModel,
+        ),
+        ChangeNotifierProvider.value(
+          value: InjectionContainer.homeViewModel,
+        ),
+      ],
       child: MaterialApp(
-        title: 'Family Tree',
+        title: 'Iedeo Family Tree',
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
-        home: const AuthWrapper(),
+        home: const SplashScreen(),
       ),
-    );
-  }
-}
-
-class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-        switch (state.runtimeType) {
-          case AuthLoading:
-            return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
-          case AuthAuthenticated:
-            return const MVVMHomeScreen();
-          case AuthUnauthenticated:
-          case AuthError:
-            return const MVVMLoginScreen();
-          default:
-            return const MVVMLoginScreen();
-        }
-      },
     );
   }
 }

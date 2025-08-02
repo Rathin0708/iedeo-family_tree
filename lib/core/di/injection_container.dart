@@ -5,6 +5,7 @@ import '../../presentation/bloc/auth/auth_bloc.dart';
 import '../../presentation/viewmodels/login_viewmodel.dart';
 import '../../presentation/viewmodels/signup_viewmodel.dart';
 import '../../presentation/viewmodels/home_viewmodel.dart';
+import '../../presentation/viewmodels/splash_viewmodel.dart';
 
 class InjectionContainer {
   static late http.Client _httpClient;
@@ -14,6 +15,7 @@ class InjectionContainer {
   static late LoginViewModel _loginViewModel;
   static late SignupViewModel _signupViewModel;
   static late HomeViewModel _homeViewModel;
+  static late SplashViewModel _splashViewModel;
 
   static void init() {
     // External dependencies
@@ -46,6 +48,9 @@ class InjectionContainer {
       authRepository: _authRepository,
       authBloc: _authBloc,
     );
+    _splashViewModel = SplashViewModel(
+      authRepository: _authRepository,
+    );
   }
 
   // Getters
@@ -56,6 +61,7 @@ class InjectionContainer {
   static LoginViewModel get loginViewModel => _loginViewModel;
   static SignupViewModel get signupViewModel => _signupViewModel;
   static HomeViewModel get homeViewModel => _homeViewModel;
+  static SplashViewModel get splashViewModel => _splashViewModel;
 
   static void dispose() {
     _httpClient.close();

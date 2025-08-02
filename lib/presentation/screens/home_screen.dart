@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/di/injection_container.dart';
-import '../bloc/auth/auth_bloc.dart';
-import '../bloc/auth/auth_state.dart';
-import '../viewmodels/home_viewmodel.dart';
+import '../widgets/messaging_screen.dart';
 
 class MVVMHomeScreen extends StatefulWidget {
   const MVVMHomeScreen({super.key});
@@ -14,190 +9,450 @@ class MVVMHomeScreen extends StatefulWidget {
 }
 
 class _MVVMHomeScreenState extends State<MVVMHomeScreen> {
-  late HomeViewModel _viewModel;
+  int _currentIndex = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    _viewModel = InjectionContainer.homeViewModel;
-    
-    // Listen to ViewModel changes
-    _viewModel.addListener(_onViewModelChanged);
-  }
+  final List<FamilyPost> _posts = [
+    FamilyPost(
+      userName: 'John',
+      userLocation: 'Post, Chennai,TamilNadu',
+      userAvatar: 'https://picsum.photos/150/150?random=1',
+      postImage: 'https://picsum.photos/400/600?random=10',
+      timeAgo: '2h',
+      description: 'Had an amazing day with family! 🏠❤️ Nothing beats spending quality time together. #FamilyTime #Blessed',
+    ),
+    FamilyPost(
+      userName: 'Sarah',
+      userLocation: 'Family Gathering, Mumbai',
+      userAvatar: 'https://picsum.photos/150/150?random=2',
+      postImage: 'https://picsum.photos/400/600?random=11',
+      timeAgo: '4h',
+      description: 'Beautiful family gathering in Mumbai! So grateful for these precious moments with everyone. 🌟👨‍👩‍👧‍👦',
+    ),
+  ];
 
-  @override
-  void dispose() {
-    _viewModel.removeListener(_onViewModelChanged);
-    super.dispose();
-  }
-
-  void _onViewModelChanged() {
-    if (mounted) {
-      setState(() {});
-      
-      // Show error messages
-      if (_viewModel.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_viewModel.errorMessage!),
-            backgroundColor: AppColors.error,
-            action: SnackBarAction(
-              label: 'Dismiss',
-              textColor: AppColors.onError,
-              onPressed: () {
-                _viewModel.clearError();
-              },
-            ),
-          ),
-        );
-      }
-    }
-  }
+  final List<StoryUser> _stories = [
+    StoryUser(
+      name: 'Your Story',
+      avatar: 'https://picsum.photos/150/150?random=3',
+      isAddStory: true,
+    ),
+    StoryUser(
+      name: 'Mom',
+      avatar: 'https://picsum.photos/150/150?random=4',
+      hasStory: true,
+    ),
+    StoryUser(
+      name: 'Dad',
+      avatar: 'https://picsum.photos/150/150?random=5',
+      hasStory: true,
+    ),
+    StoryUser(
+      name: 'Sister',
+      avatar: 'https://picsum.photos/150/150?random=6',
+      hasStory: true,
+    ),
+    StoryUser(
+      name: 'Brother',
+      avatar: 'https://picsum.photos/150/150?random=7',
+      hasStory: true,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Family Tree'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              _viewModel.logout();
-            },
-          ),
-        ],
-      ),
-      body: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          if (state is AuthAuthenticated && _viewModel.user != null) {
-            return _buildAuthenticatedContent();
-          }
-          
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildAuthenticatedContent() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: Row(
           children: [
-            CircleAvatar(
-              radius: 50,
-              backgroundColor: AppColors.primary,
-              child: Text(
-                _viewModel.userInitials,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.onPrimary,
-                ),
+            const Text(
+              'Family!',
+              style: TextStyle(
+                color: Color(0xFFD2691E),
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 24),
-            Text(
-              _viewModel.welcomeMessage,
-              style: Theme.of(context).textTheme.headlineMedium,
-              textAlign: TextAlign.center,
+            const Spacer(),
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(
+                Icons.add_circle_outline,
+                color: Color(0xFF2C1810),
+                size: 28,
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              _viewModel.userEmail,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textSecondary,
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(
+                Icons.favorite_border,
+                color: Color(0xFF2C1810),
+                size: 28,
+              ),
+            ),
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MessagingScreen(),
                   ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 48),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    const Icon(
-                      Icons.family_restroom,
-                      size: 64,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Your Family Tree',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Start building your family tree by adding family members and their relationships.',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: () {
-                        _viewModel.navigateToFamilyTree();
-                      },
-                      child: const Text('Get Started'),
-                    ),
-                  ],
-                ),
+                );
+              },
+              icon: const Icon(
+                Icons.chat_bubble_outline,
+                color: Color(0xFF2C1810),
+                size: 28,
               ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildActionButton(
-                  icon: Icons.person,
-                  label: 'Profile',
-                  onPressed: () {
-                    _viewModel.navigateToProfile();
-                  },
-                ),
-                _buildActionButton(
-                  icon: Icons.settings,
-                  label: 'Settings',
-                  onPressed: () {
-                    _viewModel.navigateToSettings();
-                  },
-                ),
-                _buildActionButton(
-                  icon: Icons.refresh,
-                  label: 'Refresh',
-                  onPressed: () {
-                    _viewModel.refreshUserData();
-                  },
-                ),
-              ],
             ),
           ],
         ),
       ),
+      body: Column(
+        children: [
+          // Stories Section
+          Container(
+            height: 95, // Reduced height to prevent overflow
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              itemCount: _stories.length,
+              itemBuilder: (context, index) {
+                final story = _stories[index];
+                return Container(
+                  width: 70, // Fixed width to prevent overflow
+                  margin: const EdgeInsets.only(right: 10),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min, // Prevent overflow
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: story.hasStory
+                              ? Border.all(
+                                  color: const Color(0xFFD2691E),
+                                  width: 2,
+                                )
+                              : null,
+                        ),
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 28,
+                              backgroundImage: NetworkImage(story.avatar),
+                              onBackgroundImageError: (exception, stackTrace) {
+                                // Handle image loading error
+                              },
+                              child: story.avatar.isEmpty
+                                  ? const Icon(
+                                      Icons.person,
+                                      size: 30,
+                                      color: Colors.grey,
+                                    )
+                                  : null,
+                            ),
+                            if (story.isAddStory)
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFD2691E),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.add,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4), // Reduced spacing
+                      Flexible(
+                        child: Text(
+                          story.name,
+                          style: const TextStyle(
+                            fontSize: 11, // Slightly smaller font
+                            color: Color(0xFF2C1810),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          
+          const Divider(height: 1, color: Color(0xFFE0E0E0)),
+          
+          // Posts Section
+          Expanded(
+            child: ListView.builder(
+              itemCount: _posts.length,
+              itemBuilder: (context, index) {
+                final post = _posts[index];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Post Header
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundImage: NetworkImage(post.userAvatar),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    post.userName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      color: Color(0xFF2C1810),
+                                    ),
+                                  ),
+                                  Text(
+                                    post.userLocation,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF666666),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {},
+                              icon: const Icon(
+                                Icons.more_vert,
+                                color: Color(0xFF2C1810),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Post Image
+                      SizedBox(
+                        width: double.infinity,
+                        height: 400,
+                        child: Image.network(
+                          post.postImage,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: double.infinity,
+                              height: 400,
+                              color: Colors.grey[300],
+                              child: const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.image_not_supported,
+                                    size: 50,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Image not available',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              width: double.infinity,
+                              height: 400,
+                              color: Colors.grey[200],
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFFD2691E),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      
+                      // Post Actions
+                      Padding(
+                        padding: const EdgeInsets.all(15),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              onPressed: () {},
+                              icon: const Icon(
+                                Icons.favorite_border,
+                                color: Color(0xFF2C1810),
+                                size: 28,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {},
+                              icon: const Icon(
+                                Icons.chat_bubble_outline,
+                                color: Color(0xFF2C1810),
+                                size: 28,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {},
+                              icon: const Icon(
+                                Icons.send_outlined,
+                                color: Color(0xFF2C1810),
+                                size: 28,
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              onPressed: () {},
+                              icon: const Icon(
+                                Icons.bookmark_border,
+                                color: Color(0xFF2C1810),
+                                size: 28,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Post Description
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: '${post.userName} ',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      color: Color(0xFF2C1810),
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: post.description,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF2C1810),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              post.timeAgo,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF666666),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        selectedItemColor: const Color(0xFFD2691E),
+        unselectedItemColor: const Color(0xFF666666),
+        elevation: 8,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.card_giftcard),
+            label: 'Gift',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_tree),
+            label: 'Family',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
+      ),
     );
   }
+}
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    return Column(
-      children: [
-        IconButton(
-          onPressed: onPressed,
-          icon: Icon(icon, color: AppColors.primary),
-          iconSize: 32,
-        ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ],
-    );
-  }
+class FamilyPost {
+  final String userName;
+  final String userLocation;
+  final String userAvatar;
+  final String postImage;
+  final String timeAgo;
+  final String description;
+
+  FamilyPost({
+    required this.userName,
+    required this.userLocation,
+    required this.userAvatar,
+    required this.postImage,
+    required this.timeAgo,
+    required this.description,
+  });
+}
+
+class StoryUser {
+  final String name;
+  final String avatar;
+  final bool hasStory;
+  final bool isAddStory;
+
+  StoryUser({
+    required this.name,
+    required this.avatar,
+    this.hasStory = false,
+    this.isAddStory = false,
+  });
 }
